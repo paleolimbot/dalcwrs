@@ -1,0 +1,49 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, echo = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "README-"
+)
+```
+
+# dalcwrs
+
+The goal of dalcwrs is to ...
+
+## Installation
+
+You can install dalcwrs from github with:
+
+```{r gh-installation, eval = FALSE}
+# install.packages("devtools")
+devtools::install_github("paleolimbot/dalcwrs")
+```
+
+Load the package:
+
+```{r}
+library(tidyverse)
+library(dalcwrs)
+```
+
+## Reading ICP-MS data files
+
+Reading ICP files...
+
+```{r}
+df <- read_icpms(system.file("test_icpms/test_icpms.xlsx", package = "dalcwrs"))
+str(df)
+```
+
+Get tidy versions of ICP files in parameter-long form:
+
+```{r}
+tidy <- tidy_icpms(df) 
+str(tidy)
+```
