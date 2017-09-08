@@ -1,0 +1,11 @@
+Package: dalcwrs
+Type: Package
+Title: R Functions for the CWRS
+Version: 0.1.0.9000
+Author: Dave Redden <djredden@dal.ca>, Dewey Dunnington <dewey.dunnington@dal.ca>
+Maintainer: Dewey Dunnington <dewey.dunnington@dal.ca>
+Description: Functions to promote R workflows in the CWRS,
+    including functions to read data file from various instruments.
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
