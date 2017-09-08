@@ -5,7 +5,7 @@
 \alias{tidy_icpms}
 \title{Read ICP-MS Data Files}
 \usage{
-read_icpms(path, skip = 0, na = c("NA", "", "n/a"))
+read_icpms(path, skip = 1, na = c("NA", "", "n/a"))
 
 tidy_icpms(df)
 }

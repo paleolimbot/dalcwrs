@@ -27,7 +27,7 @@
 #' raw <- read_icpms(system.file("test_icpms/test_icpms.xlsx", package = "dalcwrs"))
 #' tidy_icpms(raw)
 #'
-read_icpms <- function(path, skip = 0, na = c("NA", "", "n/a")) {
+read_icpms <- function(path, skip = 1, na = c("NA", "", "n/a")) {
   # if is a directory, read all excel files in the directory and rbind
   if(dir.exists(path)) {
     # list files in directory
@@ -38,7 +38,7 @@ read_icpms <- function(path, skip = 0, na = c("NA", "", "n/a")) {
   }
 
   # read in file with all columns as character
-  data_file <- readxl::read_excel(path, col_types = "text", na = na) %>%
+  data_file <- readxl::read_excel(path, col_types = "text", na = na, skip = skip) %>%
     select(-starts_with("X_"))
 
   # check headers to make sure all required headers are present

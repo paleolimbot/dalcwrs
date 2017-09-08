@@ -41,6 +41,32 @@ test_that("read_icpms() reads test_icpms.xlsx correctly", {
   )
 })
 
+test_that("reading in 07-31-2017-Dave.xslx works properly", {
+  # read file
+  df <- read_icpms(file.path(test_icp_dir, "07-31-2017-Dave.xlsx"))
+  # check output columns
+  expect_true(setequal(
+    names(df),
+    c("source", "sample_id", "datetime", "extra", "run", "4.5Bkg_ppb", "24Mg_ppb",
+      "39K_ppb", "45Sc_ppb", "115In_ppb", "159Tb_ppb", "220.5Bkg_ppb")
+  ))
+  # check number of samples (176)
+  expect_length(unique(df$sample_id), 176)
+
+  # check that tidy_icpms() doesn't change the number of parameters or number of samples
+  tidy <- tidy_icpms(df)
+  expect_true(setequal(
+    with(tidy, paste0(isotope, element, "_", unit)),
+    c("4.5Bkg_ppb", "24Mg_ppb",
+      "39K_ppb", "45Sc_ppb", "115In_ppb", "159Tb_ppb",
+      "220.5Bkg_ppb")
+  ))
+  expect_true(setequal(
+    df$sample_id,
+    tidy$sample_id
+  ))
+})
+
 test_that("using test_icpms with a directory works as expected", {
   test_icp_files <- list.files(test_icp_dir, full.names = TRUE)
 
