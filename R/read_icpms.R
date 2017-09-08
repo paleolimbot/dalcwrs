@@ -14,7 +14,7 @@
 #' @export
 #'
 #' @importFrom dplyr select filter mutate mutate_at vars starts_with everything
-#' @importFrom dplyr summarise group_by ungroup if_else
+#' @importFrom dplyr summarise group_by ungroup if_else one_of matches
 #' @importFrom magrittr %>%
 #'
 #' @examples
@@ -34,7 +34,7 @@ read_icpms <- function(path, skip = 0, na = c("NA", "", "n/a")) {
     files <- list.files(path, pattern = '*.xlsx', full.names = TRUE)
 
     # return result of read_icpms_single rbinded together
-    return(purrr::map_dfr(files, read_icpms, skip = skip, na = na))
+    return(purrr::map_df(files, read_icpms, skip = skip, na = na))
   }
 
   # read in file with all columns as character
@@ -53,11 +53,18 @@ read_icpms <- function(path, skip = 0, na = c("NA", "", "n/a")) {
                                       data_file[1, c(-1, -2)],
                                       sep = "_")
   names(data_file) <- data_file_names
+  data_columns <- data_file_names[c(-1, -2)]
+
+  # sample id regular expression
+  sample_id_re <- paste0("^(.*?)\\s+", # sample id
+                         "([0-9]{1,2}/[0-9]{1,2}/[0-9]{4}\\s+", # date
+                         "[0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}\\s[AP]M)", # time
+                         "\\s*(.*?)$")
 
   # make sample ID column
   # make things from the sample_id column that aren't sample ids NA
   data_file$sample_id <- data_file[[3]] %>%
-    if_else(stringr::str_detect(., " [AP]M$"), ., NA_character_)
+    if_else(stringr::str_detect(., sample_id_re), ., NA_character_)
 
   # final format of data_file
   data_file %>%
@@ -66,17 +73,18 @@ read_icpms <- function(path, skip = 0, na = c("NA", "", "n/a")) {
     # filter where run is not NA
     filter(!is.na(Run)) %>%
     # extract sample id, datetime from sample ID column
-    tidyr::extract(sample_id, into = c("sample_id", "datetime"),
-                   paste("^(.*?)\\s+([0-9]{1,2}/[0-9]{1,2}/[0-9]{4}",
-                         "[0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}\\s[AP]M$)",
-                         sep = "\\s+")) %>%
+    tidyr::extract(sample_id, into = c("sample_id", "datetime", "extra"),
+                   sample_id_re) %>%
+    mutate(extra = if_else(extra == "", NA_character_, extra)) %>%
     # parse date_run
     mutate(datetime = lubridate::mdy_hms(datetime)) %>%
+    # add source file as a column
+    mutate(source = path) %>%
     # select final order
-    select(sample_id, datetime, run = Run, everything()) %>%
+    select(source, sample_id, datetime, extra, run = Run, everything()) %>%
     select(-Time) %>%
     # make value columns numeric
-    mutate_at(vars(-sample_id, -datetime, -run), as.numeric)
+    mutate_at(vars(one_of(data_columns)), as.numeric)
 }
 
 #' @rdname read_icpms
@@ -86,10 +94,13 @@ tidy_icpms <- function(df) {
   if(!is.data.frame(df)) stop("df is not a data frame")
 
   # check required columns
-  required_cols <- c("sample_id", "datetime", "run")
+  required_cols <- c("sample_id", "datetime", "extra", "run")
   missing_cols <- required_cols[!(required_cols %in% names(df))]
   if(length(missing_cols) > 0) stop("df is missing required columns: ",
                                     paste(missing_cols, collapse = ", "))
+
+  # define data column re
+  data_column_re <- "^([0-9.]+)([A-Za-z]+)_(.*?)$"
 
   # gather, summarise data columns
   df %>%
@@ -97,9 +108,10 @@ tidy_icpms <- function(df) {
     filter(stringr::str_detect(run, "^[0-9]+$")) %>%
     select(-run) %>%
     # gather data values
-    tidyr::gather(-sample_id, -datetime, key = "param", value = "value") %>%
+    tidyr::gather(matches(data_column_re),
+                  key = "param", value = "value") %>%
     # summarise data values to value, sd, n
-    group_by(sample_id, datetime, param) %>%
+    group_by(source, sample_id, datetime, extra, param) %>%
     summarise(sd = stats::sd(value, na.rm = TRUE),
               n = n(),
               n_na = sum(is.na(value)),
@@ -108,8 +120,9 @@ tidy_icpms <- function(df) {
     ungroup() %>%
     # extract element, isotope, unit from param
     tidyr::extract(param, into = c("isotope", "element", "unit"),
-                   "^([0-9.]+)([A-Za-z]+)_(.*?)$") %>%
+                   data_column_re) %>%
     mutate(isotope = as.numeric(isotope)) %>%
     # final column selection
-    select(sample_id, datetime, isotope, element, value, sd, unit, n, n_na, rsd)
+    select(source, sample_id, datetime, extra, isotope,
+           element, value, sd, unit, n, n_na, rsd)
 }
