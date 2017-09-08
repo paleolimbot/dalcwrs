@@ -6,6 +6,8 @@ Author: Dave Redden <djredden@dal.ca>, Dewey Dunnington <dewey.dunnington@dal.ca
 Maintainer: Dewey Dunnington <dewey.dunnington@dal.ca>
 Description: Functions to promote R workflows in the CWRS,
     including functions to read data file from various instruments.
+Imports: dplyr, tidyr, lubridate, stringr, purrr, magrittr, readxl
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
+RoxygenNote: 6.0.1
